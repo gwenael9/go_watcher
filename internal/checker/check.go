@@ -1,27 +1,39 @@
 package checker
 
 import (
+	"errors"
+	"fmt"
 	"net/http"
 	"time"
+
+	"github.com/gwenael9/go_watcher/internal/config"
 )
 
 type CheckResult struct {
-	Target string
-	Status string
-	Err    error
+	InputTarget config.InputTarget
+	Status      string
+	Err         error
 }
 
-func CheckUrl(url string) CheckResult {
+type ReportEntry struct {
+	Name   string
+	URL    string
+	Owner  string
+	Status string // "OK", "Unreachable" ou "Error"
+	ErrMsg string // Message d'erreur, omit si vide
+}
+
+func CheckUrl(target config.InputTarget) CheckResult {
 	client := http.Client{
 		Timeout: 3 * time.Second,
 	}
 
-	resp, err := client.Get(url)
+	resp, err := client.Get(target.URL)
 	if err != nil {
 		return CheckResult{
-			Target: url,
+			InputTarget: target,
 			Err: &UnreachableError{
-				URL: url,
+				URL: target.URL,
 				Err: err,
 			},
 		}
@@ -30,7 +42,29 @@ func CheckUrl(url string) CheckResult {
 	defer resp.Body.Close()
 
 	return CheckResult{
-		Target: url,
-		Status: resp.Status,
+		InputTarget: target,
+		Status:      resp.Status,
 	}
+}
+
+func ConvertToReportEntry(results CheckResult) ReportEntry {
+	report := ReportEntry{
+		Name:   results.InputTarget.Name,
+		URL:    results.InputTarget.URL,
+		Owner:  results.InputTarget.Owner,
+		Status: results.Status,
+	}
+
+	if results.Err != nil {
+		var unreachable *UnreachableError
+		if errors.As(results.Err, &unreachable) {
+			report.Status = "Unreachable"
+			report.ErrMsg = fmt.Sprintf("Unreachable URL: %v", unreachable.URL)
+		} else {
+			report.Status = "Error"
+			report.ErrMsg = fmt.Sprintf("Error URL: %v", results.Err)
+
+		}
+	}
+	return report
 }
