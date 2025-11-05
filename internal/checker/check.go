@@ -12,23 +12,22 @@ type CheckResult struct {
 	Err    error
 }
 
-func CheckUrl(url string, results chan<- CheckResult) {
+func CheckUrl(url string) CheckResult {
 	client := http.Client{
 		Timeout: 3 * time.Second,
 	}
 
 	resp, err := client.Get(url)
 	if err != nil {
-		results <- CheckResult{
+		return CheckResult{
 			Target: url,
 			Err:    fmt.Errorf("Request failed: %w", err),
 		}
-		return
 	}
 
 	defer resp.Body.Close()
 
-	results <- CheckResult{
+	return CheckResult{
 		Target: url,
 		Status: resp.Status,
 	}
