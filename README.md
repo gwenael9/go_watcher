@@ -17,3 +17,13 @@ go build -o bin/gowatcher .
 # Ajouter une entrée dans le fichier urls.json
 ./bin/gowatcher add -f=data/urls.json -n=Google -u=https://google.com -o=toto
 ```
+
+## Exemple de données dans urls.json
+
+```json
+{
+  "name": "Google",
+  "url": "https://google.com",
+  "owner": "test"
+}
+```
